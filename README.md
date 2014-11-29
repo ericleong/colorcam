@@ -1,4 +1,4 @@
-![a colorful camera icon](colorcam/src/main/res/drawable-xxxhdpi/ic_launcher.png?raw=true)
+![a colorful camera icon](app/src/main/res/drawable-xxxhdpi/ic_launcher.png?raw=true)
 
 colorcam
 ========
