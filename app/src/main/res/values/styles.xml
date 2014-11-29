@@ -1,0 +1,24 @@
+<resources>
+
+	<!-- Base application theme. -->
+	<style name="AppTheme" parent="android:Theme.DeviceDefault.Light.DarkActionBar">
+		<!-- Customize your theme here. -->
+	</style>
+
+	<style name="Swatch">
+		<item name="android:layout_weight">1</item>
+		<item name="android:duplicateParentState">true</item>
+		<item name="android:layout_width">0dp</item>
+		<item name="android:layout_height">match_parent</item>
+	</style>
+
+	<style name="Swatch.Gallery">
+		<item name="android:background">@color/grey_800</item>
+	</style>
+
+	<style name="Swatch.Image">
+		<item name="android:background">@drawable/circle</item>
+		<item name="android:layout_gravity">center</item>
+	</style>
+
+</resources>

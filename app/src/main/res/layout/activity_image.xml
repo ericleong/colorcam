@@ -1,0 +1,57 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:tools="http://schemas.android.com/tools"
+             android:id="@+id/container"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             tools:context="com.dreamynomad.colorcam.ImageActivity"
+             tools:ignore="MergeRootFrame">
+
+	<ImageView
+		android:id="@+id/full_image"
+		android:layout_gravity="center"
+		android:scaleType="fitCenter"
+		android:adjustViewBounds="true"
+		android:transitionName="edit"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"/>
+
+	<LinearLayout
+		android:id="@+id/swatches"
+		android:orientation="horizontal"
+		android:layout_gravity="center"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content">
+
+		<View
+			style="@style/Swatch.Image"
+			android:id="@+id/color_0"
+			android:transitionName="color_0" />
+
+		<View
+			style="@style/Swatch.Image"
+			android:id="@+id/color_1"
+			android:transitionName="color_1" />
+
+		<View
+			style="@style/Swatch.Image"
+			android:id="@+id/color_2"
+			android:transitionName="color_2" />
+
+		<View
+			style="@style/Swatch.Image"
+			android:id="@+id/color_3"
+			android:transitionName="color_3" />
+
+		<View
+			style="@style/Swatch.Image"
+			android:id="@+id/color_4"
+			android:transitionName="color_4" />
+
+		<View
+			style="@style/Swatch.Image"
+			android:id="@+id/color_5"
+			android:transitionName="color_5" />
+
+	</LinearLayout>
+
+</FrameLayout>

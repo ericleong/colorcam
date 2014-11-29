@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Colorcam</string>
+    <string name="action_save">Save</string>
+    <string name="action_share">Share</string>
+    <string name="action_import">Import</string>
+    <string name="choose_image">Choose image</string>
+    <string name="share_to">Share to</string>
+    <string name="title_activity_image">Edit</string>
+
+</resources>
