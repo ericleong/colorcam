@@ -105,6 +105,8 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		@Override
 		protected void onPostExecute(Bitmap bitmap) {
 			if (this.position == viewHolder.getPosition() && bitmap != null) {
+				viewHolder.mImageView.setAlpha(0.0f);
+				viewHolder.mImageView.animate().alpha(1.0f);
 				viewHolder.mImageView.setImageBitmap(bitmap);
 
 				PaletteLruCache colorCache = PaletteLruCache.getInstance();
@@ -165,6 +167,8 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 				if (j < viewHolder.mNumColors) {
 					viewHolder.mColors[j] = swatches.get(j).getRgb();
 					viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
+					viewHolder.mColorViews[j].setAlpha(0.0f);
+					viewHolder.mColorViews[j].animate().alpha(1.0f);
 					viewHolder.mColorViews[j].setVisibility(View.VISIBLE);
 				} else {
 					viewHolder.mColorViews[j].setVisibility(View.GONE);
