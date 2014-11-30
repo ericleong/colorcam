@@ -1,5 +1,6 @@
 package com.dreamynomad.colorcam;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -14,6 +15,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
@@ -364,6 +366,7 @@ public class ImageActivity extends Activity {
 		return true;
 	}
 
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// Handle action bar item clicks here. The action bar will
@@ -371,7 +374,10 @@ public class ImageActivity extends Activity {
 		// as you specify a parent activity in AndroidManifest.xml.
 		int id = item.getItemId();
 
-		if (id == R.id.action_save) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && id == android.R.id.home) {
+			finishAfterTransition();
+			return true;
+		} else if (id == R.id.action_save) {
 			saveImage();
 			return true;
 		} else if (id == R.id.action_share) {
