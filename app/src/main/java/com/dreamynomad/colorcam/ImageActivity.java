@@ -43,7 +43,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-
+/**
+ * Allows user to add a palette to an image.
+ */
 public class ImageActivity extends Activity {
 
 	private static final String TAG = ImageActivity.class.getSimpleName();
@@ -65,6 +67,7 @@ public class ImageActivity extends Activity {
 		@Override
 		public boolean onTouch(View v, MotionEvent event) {
 			if (mImageView != null && mSwatches != null) {
+				// Move swatch to finger
 				float y = event.getY();
 				float center = mImageView.getY() + mImageView.getMeasuredHeight() / 2;
 
@@ -73,6 +76,7 @@ public class ImageActivity extends Activity {
 				float imageHeight = matrix[Matrix.MSCALE_Y]
 						* mImageView.getDrawable().getIntrinsicHeight();
 
+				// Make sure swatches are within image
 				if (y - mSwatches.getMeasuredHeight() / 2 < center - imageHeight / 2) {
 					y = center - imageHeight / 2 + mSwatches.getMeasuredHeight() / 2;
 				} else if (y + mSwatches.getMeasuredHeight() / 2 >
@@ -166,21 +170,28 @@ public class ImageActivity extends Activity {
 		}
 	}
 
-	private Bitmap loadUri(Uri imageUri, int min, boolean inMutable) {
+	/**
+	 * @param imageUri document uri to the image
+	 * @param reqSize the required size of the bitmap.
+	 *                         -1 if the entire bitmap should be loaded
+	 * @param inMutable whether or not the bitmap should be mutable
+	 * @return the bitmap from the uri
+	 */
+	private Bitmap loadUri(Uri imageUri, int reqSize, boolean inMutable) {
 		try {
 			Bitmap bitmap;
 			ParcelFileDescriptor parcelFileDescriptor =
 					getContentResolver().openFileDescriptor(imageUri, "r");
 			FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
 
-			if (min < 0) {
+			if (reqSize < 0) {
 				// Load entire bitmap. Actual size limit is 32k, but it is unlikely to be reached.
 				final BitmapFactory.Options options = new BitmapFactory.Options();
 				options.inMutable = inMutable;
 				bitmap = BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
 			} else {
 				bitmap = GalleryUtils.decodeSampledBitmapFromResource(
-						fileDescriptor, min, min, inMutable);
+						fileDescriptor, reqSize, reqSize, inMutable);
 			}
 
 			parcelFileDescriptor.close();
@@ -193,6 +204,9 @@ public class ImageActivity extends Activity {
 		return null;
 	}
 
+	/**
+	 * @return the height of the status bar in pixels
+	 */
 	public int getStatusBarHeight() {
 		int result = 0;
 		int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
@@ -202,6 +216,10 @@ public class ImageActivity extends Activity {
 		return result;
 	}
 
+	/**
+	 * @param bitmap the image to overlay
+	 * @return the approximate width of the image when displayed
+	 */
 	public int getSwatchesWidth(Bitmap bitmap) {
 		if (bitmap != null) {
 			Rect rectangle = new Rect();
@@ -229,19 +247,22 @@ public class ImageActivity extends Activity {
 		return 0;
 	}
 
+	/**
+	 * Loads and displays an image.
+	 */
 	private class ImageTask extends AsyncTask<Uri, Void, Bitmap> {
 
-		private int min;
+		private int reqSize;
 
-		private ImageTask(int min) {
-			this.min = min;
+		private ImageTask(int reqSize) {
+			this.reqSize = reqSize;
 		}
 
 		@Override
 		protected Bitmap doInBackground(Uri... params) {
 			Uri imageUri = params[0];
 
-			return loadUri(imageUri, min, false);
+			return loadUri(imageUri, reqSize, false);
 		}
 
 		@Override
@@ -426,6 +447,9 @@ public class ImageActivity extends Activity {
 		return null;
 	}
 
+	/**
+	 * Displays a progress bar and saves the image with the palette.
+	 */
 	private class SaveTask extends AsyncTask<Void, Void, File> {
 
 		private ProgressDialog progressDialog;
@@ -461,6 +485,10 @@ public class ImageActivity extends Activity {
 		new SaveTask().execute();
 	}
 
+	/**
+	 * Displays a progress bar, saves the image, and displays a dialog to allow the user to choose
+	 * where they want to share the image.
+	 */
 	private class ShareTask extends AsyncTask<Void, Void, File> {
 
 		private ProgressDialog progressDialog;
@@ -511,7 +539,7 @@ public class ImageActivity extends Activity {
 		new ShareTask().execute();
 	}
 
-	public static File getOutputMediaFile(String subdir, String extension) {
+	private static File getOutputMediaFile(String subdir, String extension) {
 
 		// TODO: you should check that the SDCard is mounted using
 		// Environment.getExternalStorageState() before doing this.

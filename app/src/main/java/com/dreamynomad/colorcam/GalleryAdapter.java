@@ -17,6 +17,8 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
+ * Displays images with their palettes.
+ *
  * Created by Eric on 11/23/2014.
  */
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHolder> {
@@ -25,12 +27,18 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 	private OnItemClickListener mOnItemClickListener;
 
+	/**
+	 * Called when the user clicks on an item.
+	 */
 	public static interface OnItemClickListener {
 		public void onItemClicked(ViewHolder viewHolder);
 	}
 
 	private static Comparator<Palette.Swatch> mSwatchComparator = GalleryUtils.getSwatchComparator();
 
+	/**
+	 * Manages a item, which contains an image and its palette.
+	 */
 	public static class ViewHolder extends RecyclerView.ViewHolder {
 
 		public String mPath;
@@ -61,7 +69,10 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		}
 	}
 
-	public static class ImageTask extends AsyncTask<String, Void, Bitmap> {
+	/**
+	 * Set thumbnail bitmap for an image.
+	 */
+	private static class ImageTask extends AsyncTask<String, Void, Bitmap> {
 
 		private int position;
 		private ViewHolder viewHolder;
@@ -108,6 +119,9 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		}
 	}
 
+	/**
+	 * Generates a higher resolution image to use for palette generation.
+	 */
 	private static class PaletteImageTask extends AsyncTask<String, Void, Bitmap> {
 
 		private int position;
@@ -134,32 +148,41 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 			if (position == viewHolder.getPosition()) {
 				viewHolder.mPaletteTask =
 						Palette.generateAsync(bitmap, viewHolder.mColorViews.length,
-								new PaletteTask(position, viewHolder, pathName));
+								new PaletteListener(position, viewHolder, pathName));
 			}
 		}
 	}
 
+	/**
+	 * @param viewHolder the view holder to set the colors of
+	 * @param swatches the palette colors
+	 */
 	private static void setPalette(ViewHolder viewHolder, List<Palette.Swatch> swatches) {
-		viewHolder.mNumColors = swatches.size();
+		if (viewHolder != null) {
+			viewHolder.mNumColors = swatches.size();
 
-		for (int j = 0; j < viewHolder.mColorViews.length; j++) {
-			if (j < viewHolder.mNumColors) {
-				viewHolder.mColors[j] = swatches.get(j).getRgb();
-				viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
-				viewHolder.mColorViews[j].setVisibility(View.VISIBLE);
-			} else {
-				viewHolder.mColorViews[j].setVisibility(View.GONE);
+			for (int j = 0; j < viewHolder.mColorViews.length; j++) {
+				if (j < viewHolder.mNumColors) {
+					viewHolder.mColors[j] = swatches.get(j).getRgb();
+					viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
+					viewHolder.mColorViews[j].setVisibility(View.VISIBLE);
+				} else {
+					viewHolder.mColorViews[j].setVisibility(View.GONE);
+				}
 			}
 		}
 	}
 
-	public static class PaletteTask implements Palette.PaletteAsyncListener {
+	/**
+	 * Sets the palette of an image once it is ready.
+	 */
+	private static class PaletteListener implements Palette.PaletteAsyncListener {
 
 		private int position;
 		private ViewHolder viewHolder;
 		private String pathName;
 
-		public PaletteTask(int position, ViewHolder viewHolder, String pathName) {
+		public PaletteListener(int position, ViewHolder viewHolder, String pathName) {
 			this.position = position;
 			this.viewHolder = viewHolder;
 			this.pathName = pathName;
@@ -168,9 +191,11 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		@Override
 		public void onGenerated(Palette palette) {
 			if (position == viewHolder.getPosition()) {
+				// make a copy to sort and store
 				List<Palette.Swatch> swatches = new ArrayList<>(palette.getSwatches());
 				Collections.sort(swatches, mSwatchComparator);
 
+				// put the swatches into the cache
 				PaletteLruCache colorCache = PaletteLruCache.getInstance();
 				colorCache.put(pathName, swatches);
 
@@ -204,6 +229,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 	@Override
 	public void onBindViewHolder(ViewHolder viewHolder, int i) {
 
+		// Cancel tasks
 		if (viewHolder.mImageTask != null && !viewHolder.mImageTask.isCancelled() &&
 				viewHolder.mImageTask.getStatus() != AsyncTask.Status.FINISHED) {
 			viewHolder.mImageTask.cancel(true);
@@ -214,10 +240,13 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 			viewHolder.mPaletteTask.cancel(true);
 		}
 
+		// Reset image and colors
 		viewHolder.mImageView.setImageBitmap(null);
 		for (int j = 0; j < viewHolder.mColorViews.length; j++) {
 			viewHolder.mColorViews[j].setVisibility(View.GONE);
 		}
+
+		viewHolder.mNumColors = 0;
 
 		mCursor.moveToPosition(i);
 

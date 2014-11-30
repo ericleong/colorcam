@@ -23,7 +23,9 @@ import android.view.Window;
 
 import java.util.Arrays;
 
-
+/**
+ * Allows user to browse images on the device.
+ */
 public class GalleryActivity extends Activity
 		implements LoaderManager.LoaderCallbacks<Cursor>, GalleryAdapter.OnItemClickListener {
 
