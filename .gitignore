@@ -5,3 +5,5 @@
 .DS_Store
 Thumbs.db
 /build
+*.apk
+app/manifest-merger-release-report.txt

@@ -95,7 +95,16 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 				Bitmap bitmap = MediaStore.Images.Thumbnails.getThumbnail(
 						App.getContext().getContentResolver(), imageId,
 						MediaStore.Images.Thumbnails.MINI_KIND, null);
-				cache.put(pathName, bitmap);
+				if (cache != null) {
+					cache.put(pathName, bitmap);
+				} else {
+					// attempt #2
+					BitmapLruCache cache2 = BitmapLruCache.getInstance();
+
+					if (cache2 != null) {
+						cache2.put(pathName, bitmap);
+					}
+				}
 				return bitmap;
 			} else {
 				return cache.get(pathName);
