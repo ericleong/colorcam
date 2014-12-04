@@ -6,6 +6,8 @@ import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.support.v7.graphics.Palette;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +24,8 @@ import java.util.List;
  * Created by Eric on 11/23/2014.
  */
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHolder> {
+
+	private static final String TAG = GalleryAdapter.class.getSimpleName();
 
 	private Cursor mCursor;
 
@@ -89,26 +93,30 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		protected Bitmap doInBackground(String... params) {
 			pathName = params[0];
 
-			BitmapLruCache cache = BitmapLruCache.getInstance();
+			if (!TextUtils.isEmpty(pathName)) {
+				BitmapLruCache cache = BitmapLruCache.getInstance();
 
-			if (cache.get(pathName) == null) {
-				Bitmap bitmap = MediaStore.Images.Thumbnails.getThumbnail(
-						App.getContext().getContentResolver(), imageId,
-						MediaStore.Images.Thumbnails.MINI_KIND, null);
-				if (cache != null) {
-					cache.put(pathName, bitmap);
-				} else {
-					// attempt #2
-					BitmapLruCache cache2 = BitmapLruCache.getInstance();
+				if (cache.get(pathName) == null) {
+					Bitmap bitmap = MediaStore.Images.Thumbnails.getThumbnail(
+							App.getContext().getContentResolver(), imageId,
+							MediaStore.Images.Thumbnails.MINI_KIND, null);
+					if (cache != null) {
+						cache.put(pathName, bitmap);
+					} else {
+						// attempt #2
+						BitmapLruCache cache2 = BitmapLruCache.getInstance();
 
-					if (cache2 != null) {
-						cache2.put(pathName, bitmap);
+						if (cache2 != null) {
+							cache2.put(pathName, bitmap);
+						}
 					}
+					return bitmap;
+				} else {
+					return cache.get(pathName);
 				}
-				return bitmap;
-			} else {
-				return cache.get(pathName);
 			}
+
+			return null;
 		}
 
 		@Override
@@ -261,22 +269,34 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 		viewHolder.mNumColors = 0;
 
-		mCursor.moveToPosition(i);
+		if (mCursor != null) {
+			mCursor.moveToPosition(i);
 
-		int idIdx = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
-		long id = mCursor.getLong(idIdx);
+			int idIdx = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
+			long id = mCursor.getLong(idIdx);
 
-		int dataIdx = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-		String path = mCursor.getString(dataIdx);
+			int dataIdx = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+			String path = mCursor.getString(dataIdx);
 
-		viewHolder.mPath = path;
-		viewHolder.mImageTask = new ImageTask(i, id, viewHolder);
-		viewHolder.mImageTask.execute(path);
+			if (!TextUtils.isEmpty(path)) {
+				viewHolder.mPath = path;
+				viewHolder.mImageTask = new ImageTask(i, id, viewHolder);
+				viewHolder.mImageTask.execute(path);
+			} else {
+				Log.e(TAG, "Data column is null!");
+			}
+		} else {
+			Log.e(TAG, "Cursor is null!");
+		}
 	}
 
 	@Override
 	public int getItemCount() {
-		return mCursor.getCount();
+		if (mCursor != null) {
+			return mCursor.getCount();
+		}
+
+		return 0;
 	}
 
 	public void changeCursor(Cursor cursor) {
