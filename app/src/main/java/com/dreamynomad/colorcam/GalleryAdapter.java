@@ -100,15 +100,8 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 					Bitmap bitmap = MediaStore.Images.Thumbnails.getThumbnail(
 							App.getContext().getContentResolver(), imageId,
 							MediaStore.Images.Thumbnails.MINI_KIND, null);
-					if (cache != null) {
+					if (cache != null && bitmap != null) {
 						cache.put(pathName, bitmap);
-					} else {
-						// attempt #2
-						BitmapLruCache cache2 = BitmapLruCache.getInstance();
-
-						if (cache2 != null) {
-							cache2.put(pathName, bitmap);
-						}
 					}
 					return bitmap;
 				} else {
@@ -159,12 +152,16 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 			this.pathName = params[0];
 
-			return GalleryUtils.decodeSampledBitmapFromResource(pathName, size, size);
+			if (this.pathName != null) {
+				return GalleryUtils.decodeSampledBitmapFromResource(pathName, size, size);
+			}
+
+			return null;
 		}
 
 		@Override
 		protected void onPostExecute(Bitmap bitmap) {
-			if (position == viewHolder.getPosition()) {
+			if (position == viewHolder.getPosition() && bitmap != null) {
 				viewHolder.mPaletteTask =
 						Palette.generateAsync(bitmap, viewHolder.mColorViews.length,
 								new PaletteListener(position, viewHolder, pathName));
@@ -211,7 +208,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 		@Override
 		public void onGenerated(Palette palette) {
-			if (position == viewHolder.getPosition()) {
+			if (position == viewHolder.getPosition() && palette != null) {
 				// make a copy to sort and store
 				List<Palette.Swatch> swatches = new ArrayList<>(palette.getSwatches());
 				Collections.sort(swatches, mSwatchComparator);
