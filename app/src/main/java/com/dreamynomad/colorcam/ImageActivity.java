@@ -474,7 +474,6 @@ public class ImageActivity extends Activity {
 						getContentResolver().openFileDescriptor(mUri, "r");
 				FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
 
-
 				BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
 
 				parcelFileDescriptor.close();
@@ -500,7 +499,12 @@ public class ImageActivity extends Activity {
 		for (int i = 0; i < mColors.length; i++) {
 			paint.setColor(mColors[i]);
 
-			canvas.drawRect(i * size, 0, i * size + size, size, paint);
+			if (i < mColors.length - 1) {
+				canvas.drawRect(i * size, 0, i * size + size, size, paint);
+			} else {
+				// last one!
+				canvas.drawRect(i * size, 0, bitmap.getWidth(), size, paint);
+			}
 		}
 
 		File file = getOutputMediaFile(getResources().getString(R.string.app_name), ".png");
