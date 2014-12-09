@@ -4,9 +4,11 @@
     <string name="app_name">Colorcam</string>
     <string name="action_save">Save</string>
     <string name="action_share">Share</string>
+    <string name="action_share_palette">Share Palette</string>
     <string name="action_import">Import</string>
     <string name="choose_image">Choose image</string>
     <string name="share_to">Share to</string>
     <string name="title_activity_image">Edit</string>
+    <string name="save_file">Saving image...</string>
 
 </resources>

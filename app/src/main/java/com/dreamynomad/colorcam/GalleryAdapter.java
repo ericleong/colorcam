@@ -46,6 +46,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 	public static class ViewHolder extends RecyclerView.ViewHolder {
 
 		public String mPath;
+		public long mId;
 		public int[] mColors;
 
 		public int mNumColors;
@@ -264,6 +265,8 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 			viewHolder.mColorViews[j].setVisibility(View.GONE);
 		}
 
+		viewHolder.mPath = null;
+		viewHolder.mId = -1;
 		viewHolder.mNumColors = 0;
 
 		if (mCursor != null) {
@@ -277,6 +280,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 			if (!TextUtils.isEmpty(path)) {
 				viewHolder.mPath = path;
+				viewHolder.mId = id;
 				viewHolder.mImageTask = new ImageTask(i, id, viewHolder);
 				viewHolder.mImageTask.execute(path);
 			} else {

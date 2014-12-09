@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -103,33 +102,37 @@ public class GalleryActivity extends Activity
 
 	@Override
 	public void onItemClicked(GalleryAdapter.ViewHolder viewHolder) {
-		Intent intent = new Intent(this, ImageActivity.class);
-		intent.putExtra(ImageActivity.EXTRA_IMAGE_PATH, viewHolder.mPath);
+		if (viewHolder != null && viewHolder.mPath != null) {
+			Intent intent = new Intent(this, ImageActivity.class);
 
-		int[] colors = Arrays.copyOf(viewHolder.mColors, viewHolder.mNumColors);
-		intent.putExtra(ImageActivity.EXTRA_COLORS, colors);
+			intent.putExtra(ImageActivity.EXTRA_IMAGE_ID, viewHolder.mId);
+			intent.putExtra(ImageActivity.EXTRA_IMAGE_PATH, viewHolder.mPath);
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-			viewHolder.mImageView.setTransitionName("edit");
+			int[] colors = Arrays.copyOf(viewHolder.mColors, viewHolder.mNumColors);
+			intent.putExtra(ImageActivity.EXTRA_COLORS, colors);
 
-			for (int i = 0; i < viewHolder.mNumColors; i++) {
-				viewHolder.mColorViews[i].setTransitionName("color_" + i);
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+				viewHolder.mImageView.setTransitionName("edit");
+
+				for (int i = 0; i < viewHolder.mNumColors; i++) {
+					viewHolder.mColorViews[i].setTransitionName("color_" + i);
+				}
+
+				Pair[] pairs = new Pair[viewHolder.mNumColors + 1];
+				pairs[0] = new Pair<View, String>(viewHolder.mImageView, "edit");
+				for (int i = 1; i < viewHolder.mNumColors + 1; i++) {
+					pairs[i] = new Pair<>(viewHolder.mColorViews[i - 1], "color_" + (i - 1));
+				}
+
+				// create the transition animation - the images in the layouts
+				// of both activities are defined with android:transitionName="robot"
+				ActivityOptions options = ActivityOptions
+						.makeSceneTransitionAnimation(this, pairs);
+				// start the new activity
+				startActivity(intent, options.toBundle());
+			} else {
+				startActivity(intent);
 			}
-
-			Pair[] pairs = new Pair[viewHolder.mNumColors + 1];
-			pairs[0] = new Pair<View, String>(viewHolder.mImageView, "edit");
-			for (int i = 1; i < viewHolder.mNumColors + 1; i++) {
-				pairs[i] = new Pair<>(viewHolder.mColorViews[i - 1], "color_" + (i - 1));
-			}
-
-			// create the transition animation - the images in the layouts
-			// of both activities are defined with android:transitionName="robot"
-			ActivityOptions options = ActivityOptions
-					.makeSceneTransitionAnimation(this, pairs);
-			// start the new activity
-			startActivity(intent, options.toBundle());
-		} else {
-			startActivity(intent);
 		}
 	}
 

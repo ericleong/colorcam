@@ -3,6 +3,7 @@ package com.dreamynomad.colorcam;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ContentUris;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -19,6 +20,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.provider.MediaStore;
 import android.support.v7.graphics.Palette;
 import android.util.Log;
 import android.util.TypedValue;
@@ -52,12 +54,14 @@ public class ImageActivity extends Activity {
 
 	private static final String TAG = ImageActivity.class.getSimpleName();
 
+	public static final String EXTRA_IMAGE_ID = "com.dreamynomad.colorcam.image_id";
 	public static final String EXTRA_IMAGE_PATH = "com.dreamynomad.colorcam.image_path";
 	public static final String EXTRA_IMAGE_URI = "com.dreamynomad.colorcam.image_uri";
 	public static final String EXTRA_COLORS = "com.dreamynomad.colorcam.colors";
 
 	private static final int NUM_COLORS = 6;
 
+	private long mId = -1;
 	private String mPath;
 	private Uri mUri;
 	private int[] mColors;
@@ -119,7 +123,9 @@ public class ImageActivity extends Activity {
 			mImageView.setOnTouchListener(mImageTouchListener);
 		}
 
-		if (intent.hasExtra(EXTRA_IMAGE_PATH)) {
+		if (intent.hasExtra(EXTRA_IMAGE_PATH) && intent.getStringExtra(EXTRA_IMAGE_PATH) != null) {
+			mId = intent.getLongExtra(EXTRA_IMAGE_ID, -1);
+
 			mPath = intent.getStringExtra(EXTRA_IMAGE_PATH);
 			Bitmap bitmap = GalleryUtils.decodeSampledBitmapFromResource(mPath, min, min);
 
@@ -383,12 +389,15 @@ public class ImageActivity extends Activity {
 		} else if (id == R.id.action_share) {
 			shareImage();
 			return true;
+		} else if (id == R.id.action_share_palette) {
+			sharePalette();
+			return true;
 		}
 
 		return super.onOptionsItemSelected(item);
 	}
 
-	private File createFile() {
+	private File createOverlayFile() {
 		Bitmap bitmap = null;
 
 		if (mPath != null) {
@@ -453,6 +462,69 @@ public class ImageActivity extends Activity {
 		return null;
 	}
 
+	private File createPaletteFile() {
+		final BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = true;
+
+		if (mPath != null) {
+			BitmapFactory.decodeFile(mPath, options);
+		} else if (mUri != null) {
+			try {
+				ParcelFileDescriptor parcelFileDescriptor =
+						getContentResolver().openFileDescriptor(mUri, "r");
+				FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+
+
+				BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
+
+				parcelFileDescriptor.close();
+			} catch (IOException e) {
+				Log.e(TAG, "Could not load file from: " + mUri.toString(), e);
+			}
+		}
+
+		if (mColors == null || options == null ||
+				options.outWidth == -1 || options.outHeight == -1) {
+			return null;
+		}
+
+		int size = options.outWidth / mColors.length;
+
+		Bitmap bitmap = Bitmap.createBitmap(options.outWidth, size, Bitmap.Config.ARGB_8888);
+
+		Paint paint = new Paint();
+		paint.setAntiAlias(true);
+		paint.setStyle(Paint.Style.FILL);
+		Canvas canvas = new Canvas(bitmap);
+
+		for (int i = 0; i < mColors.length; i++) {
+			paint.setColor(mColors[i]);
+
+			canvas.drawRect(i * size, 0, i * size + size, size, paint);
+		}
+
+		File file = getOutputMediaFile(getResources().getString(R.string.app_name), ".png");
+
+		try {
+			FileOutputStream fileOutputStream = new FileOutputStream(file);
+
+			bitmap.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream);
+
+			fileOutputStream.flush();
+			fileOutputStream.close();
+
+			return file;
+		} catch (FileNotFoundException e) {
+			Log.e(TAG, "Error creating file", e);
+			Toast.makeText(getApplicationContext(), "Save Failed", Toast.LENGTH_SHORT).show();
+		} catch (IOException e) {
+			Log.e(TAG, "Error creating file", e);
+			Toast.makeText(getApplicationContext(), "Save Failed", Toast.LENGTH_SHORT).show();
+		}
+
+		return null;
+	}
+
 	/**
 	 * Displays a progress bar and saves the image with the palette.
 	 */
@@ -470,7 +542,7 @@ public class ImageActivity extends Activity {
 
 		@Override
 		protected File doInBackground(Void... params) {
-			return createFile();
+			return createOverlayFile();
 		}
 
 		@Override
@@ -495,21 +567,21 @@ public class ImageActivity extends Activity {
 	 * Displays a progress bar, saves the image, and displays a dialog to allow the user to choose
 	 * where they want to share the image.
 	 */
-	private class ShareTask extends AsyncTask<Void, Void, File> {
+	private class ShareImageTask extends AsyncTask<Void, Void, File> {
 
 		private ProgressDialog progressDialog;
 
 		@Override
 		protected void onPreExecute() {
 			progressDialog = new ProgressDialog(ImageActivity.this);
-			progressDialog.setMessage("Saving File");
+			progressDialog.setMessage(getResources().getString(R.string.save_file));
 			progressDialog.setIndeterminate(true);
 			progressDialog.show();
 		}
 
 		@Override
 		protected File doInBackground(Void... params) {
-			return createFile();
+			return createOverlayFile();
 		}
 
 		@Override
@@ -527,7 +599,7 @@ public class ImageActivity extends Activity {
 
 				Uri uri = Uri.fromFile(file);
 
-				// Add the URI and the caption to the Intent.
+				// Add the URI to the Intent.
 				share.putExtra(Intent.EXTRA_STREAM, uri);
 
 				// Broadcast the Intent.
@@ -542,7 +614,72 @@ public class ImageActivity extends Activity {
 	}
 
 	private void shareImage() {
-		new ShareTask().execute();
+		new ShareImageTask().execute();
+	}
+
+	/**
+	 * Displays a progress bar, saves the image, and displays a dialog to allow the user to choose
+	 * where they want to share the image.
+	 */
+	private class SharePaletteTask extends AsyncTask<Void, Void, File> {
+
+		private ProgressDialog progressDialog;
+
+		@Override
+		protected void onPreExecute() {
+			progressDialog = new ProgressDialog(ImageActivity.this);
+			progressDialog.setMessage(getResources().getString(R.string.save_file));
+			progressDialog.setIndeterminate(true);
+			progressDialog.show();
+		}
+
+		@Override
+		protected File doInBackground(Void... params) {
+			return createPaletteFile();
+		}
+
+		@Override
+		protected void onPostExecute(File file) {
+			if (file != null) {
+				Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+				mediaScanIntent.setData(Uri.fromFile(file));
+				ImageActivity.this.sendBroadcast(mediaScanIntent);
+
+				ArrayList<Uri> imageUris = new ArrayList<Uri>();
+
+				if (mId > 0) {
+					imageUris.add(ContentUris.withAppendedId(
+							MediaStore.Images.Media.EXTERNAL_CONTENT_URI, mId));
+				} else if (mPath != null) {
+					imageUris.add(Uri.parse(mPath));
+				} else if (mUri != null) {
+					imageUris.add(mUri);
+				}
+
+				imageUris.add(Uri.fromFile(file));
+
+				// Create the new Intent using the 'Send' action.
+				Intent share = new Intent(Intent.ACTION_SEND_MULTIPLE);
+
+				// Set the MIME type
+				share.setType("image/*");
+
+				// Add the URIs to the Intent.
+				share.putParcelableArrayListExtra(Intent.EXTRA_STREAM, imageUris);
+
+				// Broadcast the Intent.
+				startActivity(Intent.createChooser(share,
+						getResources().getString(R.string.share_to)));
+			}
+
+			if (progressDialog != null) {
+				progressDialog.dismiss();
+			}
+		}
+	}
+
+	private void sharePalette() {
+		new SharePaletteTask().execute();
 	}
 
 	private static File getOutputMediaFile(String subdir, String extension) {
