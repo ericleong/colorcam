@@ -124,7 +124,8 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 				if (colorCache.get(pathName) == null) {
 					viewHolder.mPaletteTask =
-							new PaletteImageTask(position, viewHolder).execute(pathName);
+							new PaletteImageTask(position, viewHolder)
+									.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pathName);
 				} else {
 					setPalette(viewHolder, colorCache.get(pathName));
 				}
@@ -282,7 +283,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 				viewHolder.mPath = path;
 				viewHolder.mId = id;
 				viewHolder.mImageTask = new ImageTask(i, id, viewHolder);
-				viewHolder.mImageTask.execute(path);
+				viewHolder.mImageTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, path);
 			} else {
 				Log.e(TAG, "Data column is null!");
 			}
