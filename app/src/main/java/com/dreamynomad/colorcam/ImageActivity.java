@@ -21,6 +21,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v7.graphics.Palette;
 import android.util.Log;
 import android.util.TypedValue;
@@ -30,6 +31,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -59,6 +61,8 @@ public class ImageActivity extends Activity {
 	public static final String EXTRA_IMAGE_URI = "com.dreamynomad.colorcam.image_uri";
 	public static final String EXTRA_COLORS = "com.dreamynomad.colorcam.colors";
 
+	public static final String STATE_SWATCHES_POSITION = "com.dreamynomad.colorcam.swatch_position";
+
 	private static final int NUM_COLORS = 6;
 
 	private long mId = -1;
@@ -77,10 +81,7 @@ public class ImageActivity extends Activity {
 				float y = event.getY();
 				float center = mImageView.getY() + mImageView.getMeasuredHeight() / 2;
 
-				float[] matrix = new float[9];
-				mImageView.getImageMatrix().getValues(matrix);
-				float imageHeight = matrix[Matrix.MSCALE_Y]
-						* mImageView.getDrawable().getIntrinsicHeight();
+				float imageHeight = getImageHeight(mImageView);
 
 				// Make sure swatches are within image
 				if (y - mSwatches.getMeasuredHeight() / 2 < center - imageHeight / 2) {
@@ -96,6 +97,23 @@ public class ImageActivity extends Activity {
 			return true;
 		}
 	};
+
+	private static float getImageHeight(ImageView imageView) {
+		float[] matrix = new float[9];
+		imageView.getImageMatrix().getValues(matrix);
+		return matrix[Matrix.MSCALE_Y] * imageView.getDrawable().getIntrinsicHeight();
+	}
+
+	private float getSwatchesPosition() {
+		float imageHeight = getImageHeight(mImageView);
+
+		float viewY = mSwatches.getY() -
+				(mImageView.getY() + mImageView.getMeasuredHeight() / 2 - imageHeight / 2) +
+				mSwatches.getMeasuredHeight() / 2;
+
+		// convert into fraction so that it is in right place on the bitmap
+		return viewY / imageHeight;
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -123,6 +141,31 @@ public class ImageActivity extends Activity {
 
 		if (mImageView != null) {
 			mImageView.setOnTouchListener(mImageTouchListener);
+		}
+
+		// restore saved position
+		if (mImageView != null && savedInstanceState != null) {
+			final float swatchesPosition =
+					savedInstanceState.getFloat(STATE_SWATCHES_POSITION, -1);
+
+			if (swatchesPosition >= 0 && swatchesPosition <= 1) {
+				mImageView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+					@Override
+					public boolean onPreDraw() {
+						if (mSwatches != null && mImageView != null) {
+
+							float y = mImageView.getY() + mImageView.getMeasuredHeight() / 2 +
+									getImageHeight(mImageView) * (swatchesPosition - 0.5f);
+
+							mSwatches.setY(y - mSwatches.getMeasuredHeight() / 2);
+
+							mImageView.getViewTreeObserver().removeOnPreDrawListener(this);
+						}
+
+						return true;
+					}
+				});
+			}
 		}
 
 		if (intent.hasExtra(EXTRA_IMAGE_PATH) && intent.getStringExtra(EXTRA_IMAGE_PATH) != null) {
@@ -178,6 +221,13 @@ public class ImageActivity extends Activity {
 				finish();
 			}
 		}
+	}
+
+	@Override
+	protected void onSaveInstanceState(@NonNull Bundle outState) {
+		outState.putFloat(STATE_SWATCHES_POSITION, getSwatchesPosition());
+
+		super.onSaveInstanceState(outState);
 	}
 
 	/**
@@ -423,23 +473,16 @@ public class ImageActivity extends Activity {
 		int margin = (bitmap.getWidth() - mColors.length * diameter) / mColors.length / 2;
 
 		// determine where the view is on the image
-		float[] matrix = new float[9];
-		mImageView.getImageMatrix().getValues(matrix);
-		float imageHeight = matrix[Matrix.MSCALE_Y]
-				* mImageView.getDrawable().getIntrinsicHeight();
+		if (mImageView != null && mSwatches != null) {
 
-		float viewY = mSwatches.getY() -
-				(mImageView.getY() + mImageView.getMeasuredHeight() / 2 - imageHeight / 2) +
-				mSwatches.getMeasuredHeight() / 2;
+			float fractionY = getSwatchesPosition();
 
-		// convert into fraction so that it is in right place on the bitmap
-		float fractionY = viewY / imageHeight;
+			for (int i = 0; i < mColors.length; i++) {
+				paint.setColor(mColors[i]);
 
-		for (int i = 0; i < mColors.length; i++) {
-			paint.setColor(mColors[i]);
-
-			canvas.drawCircle((2 * i + 1) * margin + i * diameter + diameter / 2,
-					bitmap.getHeight() * fractionY, diameter / 2, paint);
+				canvas.drawCircle((2 * i + 1) * margin + i * diameter + diameter / 2,
+						bitmap.getHeight() * fractionY, diameter / 2, paint);
+			}
 		}
 
 		File file = getOutputMediaFile(getResources().getString(R.string.app_name), ".jpg");
