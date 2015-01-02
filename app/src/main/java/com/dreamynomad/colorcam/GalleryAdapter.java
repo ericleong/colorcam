@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * Displays images with their palettes.
- *
+ * <p/>
  * Created by Eric on 11/23/2014.
  */
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHolder> {
@@ -173,7 +173,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 	/**
 	 * @param viewHolder the view holder to set the colors of
-	 * @param swatches the palette colors
+	 * @param swatches   the palette colors
 	 */
 	private static void setPalette(ViewHolder viewHolder, List<Palette.Swatch> swatches) {
 		if (viewHolder != null) {

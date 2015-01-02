@@ -101,7 +101,9 @@ public class ImageActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+		}
 
 		Intent intent = getIntent();
 
@@ -179,9 +181,9 @@ public class ImageActivity extends Activity {
 	}
 
 	/**
-	 * @param imageUri document uri to the image
-	 * @param reqSize the required size of the bitmap.
-	 *                         -1 if the entire bitmap should be loaded
+	 * @param imageUri  document uri to the image
+	 * @param reqSize   the required size of the bitmap.
+	 *                  -1 if the entire bitmap should be loaded
 	 * @param inMutable whether or not the bitmap should be mutable
 	 * @return the bitmap from the uri
 	 */
@@ -239,7 +241,7 @@ public class ImageActivity extends Activity {
 			// Calculate ActionBar height
 			TypedValue tv = new TypedValue();
 			if (getTheme().resolveAttribute(android.R.attr.actionBarSize, tv, true)) {
-				actionBarHeight = TypedValue.complexToDimensionPixelSize(tv.data,getResources().getDisplayMetrics());
+				actionBarHeight = TypedValue.complexToDimensionPixelSize(tv.data, getResources().getDisplayMetrics());
 			}
 
 			int height = rectangle.height() - actionBarHeight - getStatusBarHeight();
@@ -649,7 +651,7 @@ public class ImageActivity extends Activity {
 				mediaScanIntent.setData(Uri.fromFile(file));
 				ImageActivity.this.sendBroadcast(mediaScanIntent);
 
-				ArrayList<Uri> imageUris = new ArrayList<Uri>();
+				ArrayList<Uri> imageUris = new ArrayList<>();
 
 				if (mId > 0) {
 					imageUris.add(ContentUris.withAppendedId(
@@ -701,7 +703,7 @@ public class ImageActivity extends Activity {
 
 		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
 		File mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-				"IMG_" + timeStamp  + extension);
+				"IMG_" + timeStamp + extension);
 
 		return mediaFile;
 	}

@@ -5,6 +5,8 @@ import android.os.Build;
 import android.util.LruCache;
 
 /**
+ * Simple least-recently-used {@link android.graphics.Bitmap} cache, sized in bytes.
+ * <p/>
  * Created by Eric on 11/27/2014.
  */
 public class BitmapLruCache extends LruCache<String, Bitmap> {

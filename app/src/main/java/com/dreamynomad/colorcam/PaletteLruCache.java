@@ -6,6 +6,9 @@ import android.util.LruCache;
 import java.util.List;
 
 /**
+ * Simple palette cache that stores a limited number of palettes
+ * (a list of {@link android.support.v7.graphics.Palette.Swatch})s.
+ * <p/>
  * Created by Eric on 11/28/2014.
  */
 public class PaletteLruCache extends LruCache<String, List<Palette.Swatch>> {

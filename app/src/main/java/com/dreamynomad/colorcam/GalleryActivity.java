@@ -76,7 +76,7 @@ public class GalleryActivity extends Activity
 		if (id == GALLERY_LOADER) {
 			return new CursorLoader(this,
 					MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-					new String[] { MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA },
+					new String[]{MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA},
 					null, null, MediaStore.Images.Media.DATE_TAKEN + " DESC");
 		}
 

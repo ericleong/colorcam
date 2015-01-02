@@ -14,6 +14,8 @@ import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 
 /**
+ * Miscellaneous utilities.
+ * <p/>
  * Created by Eric on 11/23/2014.
  */
 public class GalleryUtils {
@@ -138,6 +140,13 @@ public class GalleryUtils {
 		return BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options);
 	}
 
+	/**
+	 * @param options   contains the raw height and width of the image
+	 * @param reqWidth  the desired width
+	 * @param reqHeight the desired height
+	 * @return the value of {@link android.graphics.BitmapFactory.Options#inSampleSize}
+	 * that ensures the resulting bitmap is larger than the desired width and height
+	 */
 	public static int calculateInSampleSize(
 			BitmapFactory.Options options, int reqWidth, int reqHeight) {
 		// Raw height and width of image
@@ -164,6 +173,9 @@ public class GalleryUtils {
 		return inSampleSize;
 	}
 
+	/**
+	 * @return a comparator that sorts by HSL
+	 */
 	public static Comparator<Palette.Swatch> getSwatchComparator() {
 		return new Comparator<Palette.Swatch>() {
 			@Override
