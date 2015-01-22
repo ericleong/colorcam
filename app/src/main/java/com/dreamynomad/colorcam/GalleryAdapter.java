@@ -1,8 +1,10 @@
 package com.dreamynomad.colorcam;
 
+import android.animation.ObjectAnimator;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.provider.MediaStore;
 import android.support.v7.graphics.Palette;
 import android.support.v7.widget.RecyclerView;
@@ -116,8 +118,16 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		@Override
 		protected void onPostExecute(Bitmap bitmap) {
 			if (this.position == viewHolder.getPosition() && bitmap != null) {
-				viewHolder.mImageView.setAlpha(0.0f);
-				viewHolder.mImageView.animate().alpha(1.0f);
+				// faster to use image alpha than setAlpha()
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+					viewHolder.mImageView.setImageAlpha(0);
+					ObjectAnimator fade =
+							ObjectAnimator.ofInt(viewHolder.mImageView, "imageAlpha", 255);
+					fade.start();
+				} else {
+					viewHolder.mImageView.setAlpha(0.0f);
+					viewHolder.mImageView.animate().alpha(1.0f);
+				}
 				viewHolder.mImageView.setImageBitmap(bitmap);
 
 				PaletteLruCache colorCache = PaletteLruCache.getInstance();
@@ -182,9 +192,18 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 			for (int j = 0; j < viewHolder.mColorViews.length; j++) {
 				if (j < viewHolder.mNumColors) {
 					viewHolder.mColors[j] = swatches.get(j).getRgb();
-					viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
-					viewHolder.mColorViews[j].setAlpha(0.0f);
-					viewHolder.mColorViews[j].animate().alpha(1.0f);
+
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+						ObjectAnimator fade = ObjectAnimator.ofArgb(viewHolder.mColorViews[j],
+								"backgroundColor",
+								viewHolder.mColors[j] & 0xFFFFFF,
+								(0xFF) << 24 | viewHolder.mColors[j] & 0xFFFFFF);
+						fade.start();
+					} else {
+						viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
+						viewHolder.mColorViews[j].setAlpha(0.0f);
+						viewHolder.mColorViews[j].animate().alpha(1.0f);
+					}
 					viewHolder.mColorViews[j].setVisibility(View.VISIBLE);
 				} else {
 					viewHolder.mColorViews[j].setVisibility(View.GONE);
