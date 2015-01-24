@@ -20,7 +20,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Allows user to browse images on the device.
@@ -36,6 +38,8 @@ public class GalleryActivity extends Activity
 	private RecyclerView mGallery;
 	private GalleryAdapter mAdapter;
 	private RecyclerView.LayoutManager mLayoutManager;
+
+	private List<MediaItem> mItems;
 
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -85,19 +89,36 @@ public class GalleryActivity extends Activity
 
 	@Override
 	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+
+		if (mItems == null) {
+			mItems = new ArrayList<>(data.getCount());
+		}
+
+		mItems.clear();
+
+		while (data.moveToNext()) {
+			int idIdx = data.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
+			long id = data.getLong(idIdx);
+
+			int dataIdx = data.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+			String path = data.getString(dataIdx);
+
+			mItems.add(new MediaItem(id, path));
+		}
+
 		if (mAdapter == null) {
-			mAdapter = new GalleryAdapter(data);
+			mAdapter = new GalleryAdapter(mItems);
 			mAdapter.setOnItemClickListener(this);
 			mGallery.setAdapter(mAdapter);
 		} else {
-			mAdapter.changeCursor(data);
+			mAdapter.update(mItems);
 			mAdapter.notifyDataSetChanged();
 		}
 	}
 
 	@Override
 	public void onLoaderReset(Loader<Cursor> loader) {
-		mAdapter.changeCursor(null);
+		mAdapter.update(null);
 	}
 
 	@Override

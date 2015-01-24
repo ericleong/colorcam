@@ -29,7 +29,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 	private static final String TAG = GalleryAdapter.class.getSimpleName();
 
-	private Cursor mCursor;
+	private List<MediaItem> mMediaItems;
 
 	private OnItemClickListener mOnItemClickListener;
 
@@ -123,10 +123,11 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 					viewHolder.mImageView.setImageAlpha(0);
 					ObjectAnimator fade =
 							ObjectAnimator.ofInt(viewHolder.mImageView, "imageAlpha", 255);
+					fade.setDuration(200);
 					fade.start();
 				} else {
 					viewHolder.mImageView.setAlpha(0.0f);
-					viewHolder.mImageView.animate().alpha(1.0f);
+					viewHolder.mImageView.animate().setDuration(200).alpha(1.0f);
 				}
 				viewHolder.mImageView.setImageBitmap(bitmap);
 
@@ -198,6 +199,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 								"backgroundColor",
 								viewHolder.mColors[j] & 0xFFFFFF,
 								(0xFF) << 24 | viewHolder.mColors[j] & 0xFFFFFF);
+						fade.setDuration(200);
 						fade.start();
 					} else {
 						viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
@@ -243,8 +245,8 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		}
 	}
 
-	public GalleryAdapter(Cursor cursor) {
-		mCursor = cursor;
+	public GalleryAdapter(List<MediaItem> mediaItems) {
+		mMediaItems = mediaItems;
 	}
 
 	@Override
@@ -289,14 +291,9 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		viewHolder.mId = -1;
 		viewHolder.mNumColors = 0;
 
-		if (mCursor != null) {
-			mCursor.moveToPosition(i);
-
-			int idIdx = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
-			long id = mCursor.getLong(idIdx);
-
-			int dataIdx = mCursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-			String path = mCursor.getString(dataIdx);
+		if (mMediaItems != null) {
+			long id = mMediaItems.get(i).getId();
+			String path = mMediaItems.get(i).getPath();
 
 			if (!TextUtils.isEmpty(path)) {
 				viewHolder.mPath = path;
@@ -313,15 +310,15 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 	@Override
 	public int getItemCount() {
-		if (mCursor != null) {
-			return mCursor.getCount();
+		if (mMediaItems != null) {
+			return mMediaItems.size();
 		}
 
 		return 0;
 	}
 
-	public void changeCursor(Cursor cursor) {
-		mCursor = cursor;
+	public void update(List<MediaItem> mediaItems) {
+		mMediaItems = mediaItems;
 	}
 
 	public void setOnItemClickListener(OnItemClickListener listener) {
