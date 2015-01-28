@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
+<RelativeLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	android:background="@color/grey_400"
 	android:foreground="?android:attr/selectableItemBackground"
@@ -7,49 +7,45 @@
 	android:layout_height="@dimen/item_gallery_height"
 	android:layout_margin="@dimen/item_gallery_card_margin_half">
 
-	<LinearLayout
-		android:orientation="vertical"
+	<ImageView
+		android:id="@+id/image"
+		android:layout_alignParentTop="true"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent">
+		android:layout_height="@dimen/item_gallery_image_height"
+		android:scaleType="centerCrop"/>
 
-		<ImageView
-			android:id="@+id/image"
-			android:layout_width="match_parent"
-			android:layout_height="@dimen/item_gallery_image_height"
-			android:scaleType="centerCrop"/>
+	<LinearLayout
+		android:orientation="horizontal"
+		android:layout_gravity="center"
+		android:layout_below="@id/image"
+		android:layout_alignParentBottom="true"
+		android:layout_width="match_parent"
+		android:layout_height="@dimen/item_gallery_swatch_height">
 
-		<LinearLayout
-			android:orientation="horizontal"
-			android:layout_gravity="center"
-			android:layout_width="match_parent"
-			android:layout_height="@dimen/item_gallery_swatch_height">
+		<View
+			style="@style/Swatch.Gallery"
+			android:id="@+id/color_0" />
 
-			<View
-				style="@style/Swatch.Gallery"
-				android:id="@+id/color_0" />
+		<View
+			style="@style/Swatch.Gallery"
+			android:id="@+id/color_1" />
 
-			<View
-				style="@style/Swatch.Gallery"
-				android:id="@+id/color_1" />
+		<View
+			style="@style/Swatch.Gallery"
+			android:id="@+id/color_2" />
 
-			<View
-				style="@style/Swatch.Gallery"
-				android:id="@+id/color_2" />
+		<View
+			style="@style/Swatch.Gallery"
+			android:id="@+id/color_3" />
 
-			<View
-				style="@style/Swatch.Gallery"
-				android:id="@+id/color_3" />
+		<View
+			style="@style/Swatch.Gallery"
+			android:id="@+id/color_4" />
 
-			<View
-				style="@style/Swatch.Gallery"
-				android:id="@+id/color_4" />
-
-			<View
-				style="@style/Swatch.Gallery"
-				android:id="@+id/color_5" />
-
-		</LinearLayout>
+		<View
+			style="@style/Swatch.Gallery"
+			android:id="@+id/color_5" />
 
 	</LinearLayout>
 
-</FrameLayout>
+</RelativeLayout>

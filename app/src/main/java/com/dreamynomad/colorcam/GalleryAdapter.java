@@ -3,6 +3,7 @@ package com.dreamynomad.colorcam;
 import android.animation.ObjectAnimator;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.MediaStore;
@@ -13,6 +14,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import java.util.ArrayList;
@@ -98,6 +100,8 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 			if (!TextUtils.isEmpty(pathName)) {
 				BitmapLruCache cache = BitmapLruCache.getInstance();
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inPreferredConfig = Bitmap.Config.RGB_565;
 
 				if (cache.get(pathName) == null) {
 					Bitmap bitmap = MediaStore.Images.Thumbnails.getThumbnail(
@@ -123,11 +127,11 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 					viewHolder.mImageView.setImageAlpha(0);
 					ObjectAnimator fade =
 							ObjectAnimator.ofInt(viewHolder.mImageView, "imageAlpha", 255);
-					fade.setDuration(200);
+					fade.setDuration(150);
 					fade.start();
 				} else {
 					viewHolder.mImageView.setAlpha(0.0f);
-					viewHolder.mImageView.animate().setDuration(200).alpha(1.0f);
+					viewHolder.mImageView.animate().setDuration(150).alpha(1.0f);
 				}
 				viewHolder.mImageView.setImageBitmap(bitmap);
 
@@ -199,12 +203,12 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 								"backgroundColor",
 								viewHolder.mColors[j] & 0xFFFFFF,
 								(0xFF) << 24 | viewHolder.mColors[j] & 0xFFFFFF);
-						fade.setDuration(200);
+						fade.setDuration(150);
 						fade.start();
 					} else {
 						viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
 						viewHolder.mColorViews[j].setAlpha(0.0f);
-						viewHolder.mColorViews[j].animate().alpha(1.0f);
+						viewHolder.mColorViews[j].animate().setDuration(150).alpha(1.0f);
 					}
 					viewHolder.mColorViews[j].setVisibility(View.VISIBLE);
 				} else {
@@ -251,7 +255,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 	@Override
 	public ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
-		View root = LayoutInflater.from(viewGroup.getContext())
+		final View root = LayoutInflater.from(viewGroup.getContext())
 				.inflate(R.layout.item_gallery, viewGroup, false);
 
 		final ViewHolder viewHolder = new ViewHolder((ViewGroup) root);
