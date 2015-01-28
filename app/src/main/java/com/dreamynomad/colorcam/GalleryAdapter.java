@@ -201,7 +201,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 						ObjectAnimator fade = ObjectAnimator.ofArgb(viewHolder.mColorViews[j],
 								"backgroundColor",
-								viewHolder.mColors[j] & 0xFFFFFF,
+								0xFFBDBDBD,
 								(0xFF) << 24 | viewHolder.mColors[j] & 0xFFFFFF);
 						fade.setDuration(150);
 						fade.start();
@@ -287,8 +287,9 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 		// Reset image and colors
 		viewHolder.mImageView.setImageBitmap(null);
+		viewHolder.mImageView.setDrawingCacheBackgroundColor(0xFFBDBDBD);
 		for (int j = 0; j < viewHolder.mColorViews.length; j++) {
-			viewHolder.mColorViews[j].setVisibility(View.GONE);
+			viewHolder.mColorViews[j].setBackgroundColor(0xFFBDBDBD);
 		}
 
 		viewHolder.mPath = null;
