@@ -5,5 +5,5 @@
 	<dimen name="item_gallery_height">184dp</dimen>
 	<dimen name="item_gallery_image_height">128dp</dimen>
 	<dimen name="item_gallery_swatch_height">48dp</dimen>
-	<dimen name="item_gallery_card_margin_half">4dp</dimen>
+	<dimen name="item_gallery_card_margin">8dp</dimen>
 </resources>
