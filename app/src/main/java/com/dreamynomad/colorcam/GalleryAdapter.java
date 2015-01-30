@@ -1,7 +1,6 @@
 package com.dreamynomad.colorcam;
 
 import android.animation.ObjectAnimator;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -14,8 +13,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +33,10 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 	private List<MediaItem> mMediaItems;
 
 	private OnItemClickListener mOnItemClickListener;
+
+	private static LinearLayout.LayoutParams sHiddenSwatchParams =
+			new LinearLayout.LayoutParams(0, App.getContext().getResources()
+					.getDimensionPixelSize(R.dimen.item_gallery_swatch_height));
 
 	/**
 	 * Called when the user clicks on an item.
@@ -107,9 +110,6 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 					Bitmap bitmap = MediaStore.Images.Thumbnails.getThumbnail(
 							App.getContext().getContentResolver(), imageId,
 							MediaStore.Images.Thumbnails.MINI_KIND, null);
-					if (cache != null && bitmap != null) {
-						cache.put(pathName, bitmap);
-					}
 					return bitmap;
 				} else {
 					return cache.get(pathName);
@@ -123,16 +123,23 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		protected void onPostExecute(Bitmap bitmap) {
 			if (this.position == viewHolder.getPosition() && bitmap != null) {
 				// faster to use image alpha than setAlpha()
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-					viewHolder.mImageView.setImageAlpha(0);
-					ObjectAnimator fade =
-							ObjectAnimator.ofInt(viewHolder.mImageView, "imageAlpha", 255);
-					fade.setDuration(150);
-					fade.start();
-				} else {
-					viewHolder.mImageView.setAlpha(0.0f);
-					viewHolder.mImageView.animate().setDuration(150).alpha(1.0f);
+				BitmapLruCache cache = BitmapLruCache.getInstance();
+
+				if (cache.get(pathName) == null) {
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+						viewHolder.mImageView.setImageAlpha(0);
+						ObjectAnimator fade =
+								ObjectAnimator.ofInt(viewHolder.mImageView, "imageAlpha", 255);
+						fade.setDuration(150);
+						fade.start();
+					} else {
+						viewHolder.mImageView.setAlpha(0.0f);
+						viewHolder.mImageView.animate().setDuration(150).alpha(1.0f);
+					}
+
+					cache.put(pathName, bitmap);
 				}
+
 				viewHolder.mImageView.setImageBitmap(bitmap);
 
 				PaletteLruCache colorCache = PaletteLruCache.getInstance();
@@ -142,7 +149,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 							new PaletteImageTask(position, viewHolder)
 									.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pathName);
 				} else {
-					setPalette(viewHolder, colorCache.get(pathName));
+					setPalette(viewHolder, colorCache.get(pathName), false);
 				}
 			}
 		}
@@ -189,8 +196,10 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 	/**
 	 * @param viewHolder the view holder to set the colors of
 	 * @param swatches   the palette colors
+	 * @param animate    whether or not to fade the palette in
 	 */
-	private static void setPalette(ViewHolder viewHolder, List<Palette.Swatch> swatches) {
+	private static void setPalette(ViewHolder viewHolder, List<Palette.Swatch> swatches,
+	                               boolean animate) {
 		if (viewHolder != null) {
 			viewHolder.mNumColors = swatches.size();
 
@@ -198,21 +207,31 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 				if (j < viewHolder.mNumColors) {
 					viewHolder.mColors[j] = swatches.get(j).getRgb();
 
-					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-						ObjectAnimator fade = ObjectAnimator.ofArgb(viewHolder.mColorViews[j],
-								"backgroundColor",
-								0xFFBDBDBD,
-								(0xFF) << 24 | viewHolder.mColors[j] & 0xFFFFFF);
-						fade.setDuration(150);
-						fade.start();
+					if (animate) {
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+							ObjectAnimator fade = ObjectAnimator.ofArgb(viewHolder.mColorViews[j],
+									"backgroundColor",
+									0xFFBDBDBD,
+									(0xFF) << 24 | viewHolder.mColors[j] & 0xFFFFFF);
+							fade.setDuration(150);
+							fade.start();
+						} else {
+							viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
+							viewHolder.mColorViews[j].setAlpha(0.0f);
+							viewHolder.mColorViews[j].animate().setDuration(150).alpha(1.0f);
+						}
 					} else {
 						viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
-						viewHolder.mColorViews[j].setAlpha(0.0f);
-						viewHolder.mColorViews[j].animate().setDuration(150).alpha(1.0f);
 					}
-					viewHolder.mColorViews[j].setVisibility(View.VISIBLE);
+
+					viewHolder.mColorViews[j].setTranslationX(
+							(float) viewHolder.mColorViews.length / viewHolder.mNumColors * viewHolder.mColorViews[j].getLeft() - viewHolder.mColorViews[j].getLeft()
+					);
+					viewHolder.mColorViews[j].setPivotX(0);
+					viewHolder.mColorViews[j].setScaleX((float) viewHolder.mColorViews.length / viewHolder.mNumColors);
 				} else {
-					viewHolder.mColorViews[j].setVisibility(View.GONE);
+					viewHolder.mColorViews[j].setTranslationX(0);
+					viewHolder.mColorViews[j].setScaleX(0);
 				}
 			}
 		}
@@ -244,7 +263,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 				PaletteLruCache colorCache = PaletteLruCache.getInstance();
 				colorCache.put(pathName, swatches);
 
-				setPalette(viewHolder, swatches);
+				setPalette(viewHolder, swatches, true);
 			}
 		}
 	}

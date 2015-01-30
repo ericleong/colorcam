@@ -20,6 +20,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 
+import com.dreamynomad.colorcam.layoutmanager.FastGridLayoutManager;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -62,7 +64,8 @@ public class GalleryActivity extends Activity
 			spanCount = 2;
 		}
 
-		mLayoutManager = new GridLayoutManager(this, spanCount);
+//		mLayoutManager = new GridLayoutManager(this, spanCount);
+		mLayoutManager = new FastGridLayoutManager(this, spanCount);
 		mGallery.setLayoutManager(mLayoutManager);
 
 		if (savedInstanceState != null) {
