@@ -22,13 +22,14 @@ import android.view.Window;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Allows user to browse images on the device.
  */
 public class GalleryActivity extends Activity
 		implements LoaderManager.LoaderCallbacks<Cursor>, GalleryAdapter.OnItemClickListener {
+
+	private static final String STATE_MEDIA_ITEMS = "media_items";
 
 	private static final int GALLERY_LOADER = 1;
 
@@ -39,12 +40,14 @@ public class GalleryActivity extends Activity
 	private GalleryAdapter mAdapter;
 	private RecyclerView.LayoutManager mLayoutManager;
 
-	private List<MediaItem> mItems;
+	private ArrayList<MediaItem> mMediaItems;
 
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+		}
 
 		setContentView(R.layout.activity_gallery);
 
@@ -62,7 +65,13 @@ public class GalleryActivity extends Activity
 		mLayoutManager = new GridLayoutManager(this, spanCount);
 		mGallery.setLayoutManager(mLayoutManager);
 
-		getLoaderManager().initLoader(GALLERY_LOADER, null, this);
+		if (savedInstanceState != null) {
+			mMediaItems = savedInstanceState.getParcelableArrayList(STATE_MEDIA_ITEMS);
+
+			createAdapter();
+		} else {
+			getLoaderManager().initLoader(GALLERY_LOADER, null, this);
+		}
 	}
 
 	@Override
@@ -72,6 +81,13 @@ public class GalleryActivity extends Activity
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 			finishAfterTransition();
 		}
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		outState.putParcelableArrayList(STATE_MEDIA_ITEMS, mMediaItems);
+
+		super.onSaveInstanceState(outState);
 	}
 
 	@Override
@@ -90,11 +106,11 @@ public class GalleryActivity extends Activity
 	@Override
 	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-		if (mItems == null) {
-			mItems = new ArrayList<>(data.getCount());
+		if (mMediaItems == null) {
+			mMediaItems = new ArrayList<>(data.getCount());
 		}
 
-		mItems.clear();
+		mMediaItems.clear();
 
 		while (data.moveToNext()) {
 			int idIdx = data.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
@@ -103,15 +119,19 @@ public class GalleryActivity extends Activity
 			int dataIdx = data.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
 			String path = data.getString(dataIdx);
 
-			mItems.add(new MediaItem(id, path));
+			mMediaItems.add(new MediaItem(id, path));
 		}
 
+		createAdapter();
+	}
+
+	private void createAdapter() {
 		if (mAdapter == null) {
-			mAdapter = new GalleryAdapter(mItems);
+			mAdapter = new GalleryAdapter(mMediaItems);
 			mAdapter.setOnItemClickListener(this);
 			mGallery.setAdapter(mAdapter);
 		} else {
-			mAdapter.update(mItems);
+			mAdapter.update(mMediaItems);
 			mAdapter.notifyDataSetChanged();
 		}
 	}
