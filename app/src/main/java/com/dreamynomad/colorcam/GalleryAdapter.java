@@ -16,6 +16,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import com.dreamynomad.colorcam.cache.BitmapLruCache;
+import com.dreamynomad.colorcam.cache.PaletteLruCache;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

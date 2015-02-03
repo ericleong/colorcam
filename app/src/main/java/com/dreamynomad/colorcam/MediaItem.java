@@ -19,7 +19,7 @@ public class MediaItem implements Parcelable {
 	}
 
 	public MediaItem(Parcel in) {
-		mId = in.readInt();
+		mId = in.readLong();
 		mPath = in.readString();
 	}
 

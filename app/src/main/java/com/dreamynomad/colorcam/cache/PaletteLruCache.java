@@ -1,4 +1,4 @@
-package com.dreamynomad.colorcam;
+package com.dreamynomad.colorcam.cache;
 
 import android.support.v7.graphics.Palette;
 import android.util.LruCache;

@@ -1,4 +1,4 @@
-package com.dreamynomad.colorcam;
+package com.dreamynomad.colorcam.cache;
 
 import android.graphics.Bitmap;
 import android.os.Build;
