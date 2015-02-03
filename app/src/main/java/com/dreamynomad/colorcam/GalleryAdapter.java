@@ -33,13 +33,12 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 	private static final String TAG = GalleryAdapter.class.getSimpleName();
 
+	private static final int BACKGROUND_COLOR = 0xFFBDBDBD;
+	private static final int DURATION_FADE = 150; // fade duration in ms
+
 	private List<MediaItem> mMediaItems;
 
 	private OnItemClickListener mOnItemClickListener;
-
-	private static LinearLayout.LayoutParams sHiddenSwatchParams =
-			new LinearLayout.LayoutParams(0, App.getContext().getResources()
-					.getDimensionPixelSize(R.dimen.item_gallery_swatch_height));
 
 	/**
 	 * Called when the user clicks on an item.
@@ -112,7 +111,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 				if (cache.get(pathName) == null) {
 					Bitmap bitmap = MediaStore.Images.Thumbnails.getThumbnail(
 							App.getContext().getContentResolver(), imageId,
-							MediaStore.Images.Thumbnails.MINI_KIND, null);
+							MediaStore.Images.Thumbnails.MINI_KIND, options);
 					return bitmap;
 				} else {
 					return cache.get(pathName);
@@ -133,11 +132,11 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 						viewHolder.mImageView.setImageAlpha(0);
 						ObjectAnimator fade =
 								ObjectAnimator.ofInt(viewHolder.mImageView, "imageAlpha", 255);
-						fade.setDuration(150);
+						fade.setDuration(DURATION_FADE);
 						fade.start();
 					} else {
 						viewHolder.mImageView.setAlpha(0.0f);
-						viewHolder.mImageView.animate().setDuration(150).alpha(1.0f);
+						viewHolder.mImageView.animate().setDuration(DURATION_FADE).alpha(1.0f);
 					}
 
 					cache.put(pathName, bitmap);
@@ -149,49 +148,11 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 				if (colorCache.get(pathName) == null) {
 					viewHolder.mPaletteTask =
-							new PaletteImageTask(position, viewHolder)
-									.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pathName);
+							Palette.generateAsync(bitmap, viewHolder.mColorViews.length,
+									new PaletteListener(position, viewHolder, pathName));
 				} else {
 					setPalette(viewHolder, colorCache.get(pathName), false);
 				}
-			}
-		}
-	}
-
-	/**
-	 * Generates a higher resolution image to use for palette generation.
-	 */
-	private static class PaletteImageTask extends AsyncTask<String, Void, Bitmap> {
-
-		private int position;
-		private ViewHolder viewHolder;
-		private String pathName;
-
-		private PaletteImageTask(int position, ViewHolder viewHolder) {
-			this.position = position;
-			this.viewHolder = viewHolder;
-		}
-
-		@Override
-		protected Bitmap doInBackground(String... params) {
-			int size = App.getContext().getResources()
-					.getDimensionPixelSize(R.dimen.item_gallery_image_height);
-
-			this.pathName = params[0];
-
-			if (this.pathName != null) {
-				return GalleryUtils.decodeSampledBitmapFromResource(pathName, size, size);
-			}
-
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Bitmap bitmap) {
-			if (position == viewHolder.getPosition() && bitmap != null) {
-				viewHolder.mPaletteTask =
-						Palette.generateAsync(bitmap, viewHolder.mColorViews.length,
-								new PaletteListener(position, viewHolder, pathName));
 			}
 		}
 	}
@@ -213,15 +174,14 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 					if (animate) {
 						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 							ObjectAnimator fade = ObjectAnimator.ofArgb(viewHolder.mColorViews[j],
-									"backgroundColor",
-									0xFFBDBDBD,
+									"backgroundColor", BACKGROUND_COLOR,
 									(0xFF) << 24 | viewHolder.mColors[j] & 0xFFFFFF);
-							fade.setDuration(150);
+							fade.setDuration(DURATION_FADE);
 							fade.start();
 						} else {
 							viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
 							viewHolder.mColorViews[j].setAlpha(0.0f);
-							viewHolder.mColorViews[j].animate().setDuration(150).alpha(1.0f);
+							viewHolder.mColorViews[j].animate().setDuration(DURATION_FADE).alpha(1.0f);
 						}
 					} else {
 						viewHolder.mColorViews[j].setBackgroundColor(viewHolder.mColors[j]);
@@ -309,9 +269,9 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 		// Reset image and colors
 		viewHolder.mImageView.setImageBitmap(null);
-		viewHolder.mImageView.setDrawingCacheBackgroundColor(0xFFBDBDBD);
+		viewHolder.mImageView.setDrawingCacheBackgroundColor(BACKGROUND_COLOR);
 		for (int j = 0; j < viewHolder.mColorViews.length; j++) {
-			viewHolder.mColorViews[j].setBackgroundColor(0xFFBDBDBD);
+			viewHolder.mColorViews[j].setBackgroundColor(BACKGROUND_COLOR);
 		}
 
 		viewHolder.mPath = null;
