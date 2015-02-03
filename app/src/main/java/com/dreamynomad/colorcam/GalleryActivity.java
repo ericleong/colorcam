@@ -64,7 +64,6 @@ public class GalleryActivity extends Activity
 			spanCount = 2;
 		}
 
-//		mLayoutManager = new GridLayoutManager(this, spanCount);
 		mLayoutManager = new FastGridLayoutManager(this, spanCount);
 		mGallery.setLayoutManager(mLayoutManager);
 
