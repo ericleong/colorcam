@@ -14,7 +14,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 
 import com.dreamynomad.colorcam.cache.BitmapLruCache;
 import com.dreamynomad.colorcam.cache.PaletteLruCache;
@@ -105,14 +104,29 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 			if (!TextUtils.isEmpty(pathName)) {
 				BitmapLruCache cache = BitmapLruCache.getInstance();
-				BitmapFactory.Options options = new BitmapFactory.Options();
-				options.inPreferredConfig = Bitmap.Config.RGB_565;
 
 				if (cache.get(pathName) == null) {
-					Bitmap bitmap = MediaStore.Images.Thumbnails.getThumbnail(
-							App.getContext().getContentResolver(), imageId,
-							MediaStore.Images.Thumbnails.MINI_KIND, options);
-					return bitmap;
+
+					BitmapFactory.Options options = GalleryUtils.getThumbnailSize(pathName);
+
+					if (!isCancelled()) {
+						if (options != null) {
+							options.inJustDecodeBounds = false;
+							GalleryUtils.addInBitmapOptions(options, cache);
+
+							options.inSampleSize = 1;
+						} else {
+							options = new BitmapFactory.Options();
+						}
+
+						options.inPreferredConfig = Bitmap.Config.RGB_565;
+
+						return MediaStore.Images.Thumbnails.getThumbnail(
+								App.getContext().getContentResolver(), imageId,
+								MediaStore.Images.Thumbnails.MINI_KIND, options);
+					} else {
+						return null;
+					}
 				} else {
 					return cache.get(pathName);
 				}
@@ -165,7 +179,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 	private static void setPalette(ViewHolder viewHolder, List<Palette.Swatch> swatches,
 	                               boolean animate) {
 		if (viewHolder != null) {
-			viewHolder.mNumColors = swatches.size();
+			viewHolder.mNumColors = Math.min(swatches.size(), viewHolder.mColorViews.length);
 
 			for (int j = 0; j < viewHolder.mColorViews.length; j++) {
 				if (j < viewHolder.mNumColors) {

@@ -2,9 +2,15 @@ package com.dreamynomad.colorcam;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.provider.MediaStore;
 import android.support.v7.graphics.Palette;
+import android.util.Log;
+
+import com.dreamynomad.colorcam.cache.BitmapLruCache;
 
 import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Comparator;
 
@@ -21,6 +27,8 @@ import javax.microedition.khronos.egl.EGLDisplay;
 public class GalleryUtils {
 
 	private static final int DEFAULT_MAX_BITMAP_SIZE = 2048;
+
+	private static final String TAG = GalleryUtils.class.getSimpleName();
 
 	/**
 	 * Maximum OpenGL texture size.
@@ -95,12 +103,13 @@ public class GalleryUtils {
 	// http://developer.android.com/training/displaying-bitmaps/load-bitmap.html
 	public static Bitmap decodeSampledBitmapFromResource(
 			InputStream inputStream, int reqWidth, int reqHeight) {
-		return decodeSampledBitmapFromResource(inputStream, reqWidth, reqHeight, false);
+		return decodeSampledBitmapFromResource(inputStream, reqWidth, reqHeight, false, null);
 	}
 
 	// http://developer.android.com/training/displaying-bitmaps/load-bitmap.html
 	public static Bitmap decodeSampledBitmapFromResource(
-			InputStream inputStream, int reqWidth, int reqHeight, boolean inMutable) {
+			InputStream inputStream, int reqWidth, int reqHeight, boolean inMutable,
+			BitmapLruCache cache) {
 
 		// First decode with inJustDecodeBounds=true to check dimensions
 		final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -109,6 +118,11 @@ public class GalleryUtils {
 
 		// Calculate inSampleSize
 		options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+		// Use preexisting bitmap if possible.
+		if (cache != null) {
+			addInBitmapOptions(options, cache);
+		}
 
 		// Decode bitmap with inSampleSize set
 		options.inJustDecodeBounds = false;
@@ -196,5 +210,140 @@ public class GalleryUtils {
 				}
 			}
 		};
+	}
+
+	/* Maximum pixels size for created bitmap. */
+	private static final int MAX_NUM_PIXELS_THUMBNAIL = 512 * 384;
+	private static final int UNCONSTRAINED = -1;
+
+	/**
+	 * Constant used to indicate the dimension of mini thumbnail.
+	 */
+	public static final int TARGET_SIZE_MINI_THUMBNAIL = 320;
+
+	/**
+	 * Attempts to add an unused bitmap from the cache to reuse.
+	 *
+	 * @param options the bitmap options to modify
+	 * @param cache   the cache to reuse bitmaps from
+	 */
+	public static void addInBitmapOptions(BitmapFactory.Options options,
+	                                      BitmapLruCache cache) {
+		// inBitmap only works with mutable bitmaps, so force the decoder to
+		// return mutable bitmaps.
+		options.inMutable = true;
+
+		if (cache != null) {
+			// Try to find a bitmap to use for inBitmap.
+			Bitmap inBitmap = cache.getBitmapFromReusableSet(options);
+
+			if (inBitmap != null) {
+				// If a suitable bitmap has been found, set it as the value of
+				// inBitmap.
+				options.inBitmap = inBitmap;
+			}
+		}
+	}
+
+	/*
+	 * Compute the sample size as a function of minSideLength
+     * and maxNumOfPixels.
+     * minSideLength is used to specify that minimal width or height of a
+     * bitmap.
+     * maxNumOfPixels is used to specify the maximal size in pixels that is
+     * tolerable in terms of memory usage.
+     *
+     * The function returns a sample size based on the constraints.
+     * Both size and minSideLength can be passed in as IImage.UNCONSTRAINED,
+     * which indicates no care of the corresponding constraint.
+     * The functions prefers returning a sample size that
+     * generates a smaller bitmap, unless minSideLength = IImage.UNCONSTRAINED.
+     *
+     * Also, the function rounds up the sample size to a power of 2 or multiple
+     * of 8 because BitmapFactory only honors sample size this way.
+     * For example, BitmapFactory downsamples an image by 2 even though the
+     * request is 3. So we round up the sample size to avoid OOM.
+     */
+	private static int computeSampleSize(BitmapFactory.Options options,
+	                                     int minSideLength, int maxNumOfPixels) {
+		int initialSize = computeInitialSampleSize(options, minSideLength,
+				maxNumOfPixels);
+
+		int roundedSize;
+		if (initialSize <= 8) {
+			roundedSize = 1;
+			while (roundedSize < initialSize) {
+				roundedSize <<= 1;
+			}
+		} else {
+			roundedSize = (initialSize + 7) / 8 * 8;
+		}
+
+		return roundedSize;
+	}
+
+	private static int computeInitialSampleSize(BitmapFactory.Options options,
+	                                            int minSideLength, int maxNumOfPixels) {
+		double w = options.outWidth;
+		double h = options.outHeight;
+
+		int lowerBound = (maxNumOfPixels == UNCONSTRAINED) ? 1 :
+				(int) Math.ceil(Math.sqrt(w * h / maxNumOfPixels));
+		int upperBound = (minSideLength == UNCONSTRAINED) ? 128 :
+				(int) Math.min(Math.floor(w / minSideLength),
+						Math.floor(h / minSideLength));
+
+		if (upperBound < lowerBound) {
+			// return the larger one when there is no overlapping zone.
+			return lowerBound;
+		}
+
+		if ((maxNumOfPixels == UNCONSTRAINED) &&
+				(minSideLength == UNCONSTRAINED)) {
+			return 1;
+		} else if (minSideLength == UNCONSTRAINED) {
+			return lowerBound;
+		} else {
+			return upperBound;
+		}
+	}
+
+	/**
+	 * @param filePath the path to the raw image file
+	 * @return the potential thumbnail size from {@link MediaStore.Images.Thumbnails#getThumbnail(android.content.ContentResolver, long, int, android.graphics.BitmapFactory.Options)} getThumbnail}
+	 */
+	public static BitmapFactory.Options getThumbnailSize(String filePath) {
+		FileInputStream stream = null;
+		try {
+			stream = new FileInputStream(filePath);
+			FileDescriptor fd = stream.getFD();
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			options.inSampleSize = 1;
+			options.inJustDecodeBounds = true;
+			BitmapFactory.decodeFileDescriptor(fd, null, options);
+			if (options.mCancel || options.outWidth == -1
+					|| options.outHeight == -1) {
+				return null;
+			}
+			options.inSampleSize = computeSampleSize(
+					options, TARGET_SIZE_MINI_THUMBNAIL, MAX_NUM_PIXELS_THUMBNAIL);
+			options.inJustDecodeBounds = false;
+
+			return options;
+		} catch (IOException ex) {
+			Log.e(TAG, "", ex);
+		} catch (OutOfMemoryError oom) {
+			Log.e(TAG, "Unable to decode file " + filePath + ". OutOfMemoryError.", oom);
+		} finally {
+			try {
+				if (stream != null) {
+					stream.close();
+				}
+			} catch (IOException ex) {
+				Log.e(TAG, "", ex);
+			}
+		}
+
+		return null;
 	}
 }
