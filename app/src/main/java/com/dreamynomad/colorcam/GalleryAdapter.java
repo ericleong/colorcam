@@ -285,6 +285,12 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 		// Cancel tasks
 		if (viewHolder.mImageTask != null && !viewHolder.mImageTask.isCancelled() &&
 				viewHolder.mImageTask.getStatus() != AsyncTask.Status.FINISHED) {
+
+			if (viewHolder.mId >= 0) {
+				MediaStore.Images.Thumbnails.cancelThumbnailRequest(
+						App.getContext().getContentResolver(), viewHolder.mId);
+			}
+
 			viewHolder.mImageTask.cancel(true);
 		}
 
