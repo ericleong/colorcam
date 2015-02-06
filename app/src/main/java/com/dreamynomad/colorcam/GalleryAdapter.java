@@ -121,9 +121,21 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
 						options.inPreferredConfig = Bitmap.Config.RGB_565;
 
-						return MediaStore.Images.Thumbnails.getThumbnail(
-								App.getContext().getContentResolver(), imageId,
-								MediaStore.Images.Thumbnails.MINI_KIND, options);
+						Bitmap bitmap;
+
+						try {
+							bitmap = MediaStore.Images.Thumbnails.getThumbnail(
+									App.getContext().getContentResolver(), imageId,
+									MediaStore.Images.Thumbnails.MINI_KIND, options);
+						} catch (IllegalArgumentException e) {
+							Log.e(TAG, "Problem loading thumbnail.", e);
+
+							bitmap = MediaStore.Images.Thumbnails.getThumbnail(
+									App.getContext().getContentResolver(), imageId,
+									MediaStore.Images.Thumbnails.MINI_KIND, null);
+						}
+
+						return bitmap;
 					} else {
 						return null;
 					}
